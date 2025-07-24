@@ -1,0 +1,25 @@
+{
+  "conv1.weight": [
+    32,
+    1,
+    5,
+    5
+  ],
+  "conv1.bias": [
+    32
+  ],
+  "linear1.weight": [
+    16,
+    3872
+  ],
+  "linear1.bias": [
+    16
+  ],
+  "linear2.weight": [
+    10,
+    16
+  ],
+  "linear2.bias": [
+    10
+  ]
+}
