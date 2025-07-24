@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "mnist_ae"
+  site-url: "https://ofgarzon2662.github.io/mnist_ae"
+  description: "MNIST auto-encoder"
+  repo-branch: master
+  repo-url: "https://github.com/ofgarzon2662/mnist_ae"
