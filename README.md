@@ -195,7 +195,7 @@ python -m venv ~/mnist_env && source ~/mnist_env/bin/activate
 # now install your package from PyPI
 pip install mnist_ae
 
-# (alternative) install a local wheel if you don’t have internet access
+# (alternative) install a local wheel -- You'd have to scp your local *.whl to TSCC.
 # pip install ~/dist/mnist_ae-0.0.1-py3-none-any.whl
 
 # launch training
