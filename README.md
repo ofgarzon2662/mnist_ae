@@ -115,7 +115,7 @@ nbdev_prepare      # sync settings → pyproject.toml, tag version, install git 
 
 **Recommendations:**
 1. **Do *not* mark long training loops or plotting cells with `#| export`.**  Keep exploratory code in the notebook; only export reusable library functions and models. Heavy loops inside the package will run every time someone imports it and can waste GPU/CPU hours.
-2. The exported file can be a single, monolithic script – notebooks aren’t always written with clean architecture in mind.  After export, audit the code (or ask an advanced LLM) and refactor it into small, SOLID-compliant modules.
+2. The exported file can be a single, monolithic script – notebooks aren’t always written with clean architecture in mind.  After export, audit the code (or ask an advanced LLM, o3 from ChatGPT is recommended, as well as Gemini2.5 or any other reasoning model) and refactor it into small, SOLID-compliant modules.
 
 Use this starter prompt to guide the refactor:
 ```text
@@ -127,6 +127,14 @@ You are a senior Python engineer. Rewrite the file `mnist_ae/mnist_training.py` 
 • Add type hints and docstrings.
 Return the full, refactored code as a valid Python package structure.
 ```
+
+**What is SOLID?**  It’s a set of five design guidelines for maintainable OO code:
+
+* **S — Single Responsibility:** each module/class/function does one job.
+* **O — Open/Closed:** code is open for extension but closed for modification.
+* **L — Liskov Substitution:** derived classes can stand in for their base without breaking behaviour.
+* **I — Interface Segregation:** prefer many small, specific interfaces over one large general-purpose interface.
+* **D — Dependency Inversion:** depend on abstractions (interfaces), not concrete implementations.
 
 Spend some time on this step; clean structure pays off later.
 
