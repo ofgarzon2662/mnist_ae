@@ -1,6 +1,6 @@
 # mnist_ae – From Notebook to Python Package
 
-This guide walks you **step-by-step** through turning the `01_mnist_intro.ipynb` notebook into a distributable Python package that you can install anywhere (even on TSCC).  It assumes you already know how to run a Jupyter notebook, and that you have **Python ≥ 3.8** available (Python 3.11 recommended).
+This guide walks you **step-by-step** through turning the `CIML25_MNIST_Intro_v6.ipynb` notebook into a distributable Python package that you can install anywhere (even on TSCC).  It assumes you already know how to run a Jupyter notebook, and that you have **Python ≥ 3.8** available (Python 3.11 recommended).
 
 ---
 
@@ -26,9 +26,38 @@ Upgrade pip & install build-time tools:
 pip install --upgrade pip nbdev build wheel twine
 ```
 
+### Install project requirements (to run the notebook)
+The notebook itself depends on **PyTorch** and **torchvision** (plus NumPy, etc.).  The easiest way is to use the pinned list that comes with the repo:
+
+```bash
+pip install -r requirements.txt      # installs CPU wheels by default
+```
+
+If you already have GPU-enabled PyTorch, feel free to skip this step or install only the libraries you miss:
+
+```bash
+pip install torch torchvision
+```
+
 > 🗒️ **Why a venv?**  Keeping build tools isolated avoids polluting your base Python and makes the process reproducible.
 
 ---
+
+## 1½  Place the notebook in `nbs/`
+
+If your starting file is `CIML25_MNIST_Intro_v6.ipynb`, move (or copy) it into the `nbs/` directory **and** rename it to the more compact `01_mnist_intro.ipynb` so nbdev can pick it up.
+
+### Windows
+```powershell
+move CIML25_MNIST_Intro_v6.ipynb nbs\01_mnist_intro.ipynb
+```
+
+### macOS / Linux
+```bash
+mv CIML25_MNIST_Intro_v6.ipynb nbs/01_mnist_intro.ipynb
+```
+
+> nbdev scans all notebooks inside `nbs/`. The numeric prefix (`01_`, `02_`, …) also sets the order of the generated documentation.
 
 ## 2  Run & explore the notebook
 
@@ -57,6 +86,23 @@ nbdev_export            # generates mnist_ae/mnist_training.py
 
 ---
 
+### 3½  Sync metadata & version (optional but recommended)
+
+Before building, open `settings.ini` and update:
+
+```
+version      = 0.0.2        # bump each release
+requirements = torch torchvision   # runtime deps only
+```
+
+Then run
+
+```bash
+nbdev_prepare      # sync settings → pyproject.toml, tag version, install git hooks
+```
+
+---
+
 ## 4  Build the wheel (binary package)
 
 ```bash
@@ -64,6 +110,12 @@ python -m build --wheel        # produces dist/mnist_ae-0.0.1-py3-none-any.whl
 ```
 
 The file inside `dist/` is a **portable package** that can be installed with `pip install <file>.whl` on any machine that has Python ≥ the minimum you set.
+
+### 4½  Test the wheel locally
+```bash
+pip install --force-reinstall dist/mnist_ae-*.whl
+python -m mnist_ae.mnist_training --epochs 1 --batch_size 128  # quick sanity run
+```
 
 ---
 
