@@ -191,9 +191,6 @@ pip install mnist_ae      # replace with the final project name
 module load python3 cuda            # adjust to cluster versions
 python -m venv ~/mnist_env && source ~/mnist_env/bin/activate
 
-# install GPU-matched PyTorch first (example for CUDA 12.4)
-pip install torch==2.3.0+cu124 torchvision==0.18.0+cu124 \
-    --extra-index-url https://download.pytorch.org/whl/cu124
 
 # now install your package from PyPI
 pip install mnist_ae
@@ -204,7 +201,9 @@ pip install mnist_ae
 # launch training
 python -m mnist_ae.mnist_training --epochs 5 --batch_size 256
 ```
+
 Check the time it takes for these 5 epocs and compare to your local run. Spot any significant difference?
+
 ---
 
 ## Appendix – Common commands (Windows vs Unix)
