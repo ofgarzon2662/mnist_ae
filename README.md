@@ -2,6 +2,15 @@
 
 This guide walks you **step-by-step** through turning the `CIML25_MNIST_Intro_v6.ipynb` notebook into a distributable Python package that you can install anywhere (even on TSCC).  It assumes you already know how to run a Jupyter notebook, and that you have **Python ≥ 3.8** available (Python 3.11 recommended).
 
+## 0  Clone the repository
+
+```bash
+git clone https://github.com/<your-username>/mnist_ae.git
+cd mnist_ae
+```
+
+Feel free to fork the project first if you want your own remote.
+
 ---
 
 ## 1  Set up a clean Python environment
@@ -100,6 +109,28 @@ Then run
 ```bash
 nbdev_prepare      # sync settings → pyproject.toml, tag version, install git hooks
 ```
+
+### Inspect what nbdev generated
+`nbdev_prepare` rewrites `pyproject.toml`, regenerates type stubs, and may reformat your code. **Open the `mnist_ae/` folder** and look at the newly-created or updated modules.
+
+**Recommendations:**
+1. **Do *not* mark long training loops or plotting cells with `#| export`.**  Keep exploratory code in the notebook; only export reusable library functions and models. Heavy loops inside the package will run every time someone imports it and can waste GPU/CPU hours.
+2. The exported file can be a single, monolithic script – notebooks aren’t always written with clean architecture in mind.  After export, audit the code (or ask an advanced LLM) and refactor it into small, SOLID-compliant modules.
+
+Use this starter prompt to guide the refactor:
+```text
+You are a senior Python engineer. Rewrite the file `mnist_ae/mnist_training.py` so that:
+• Each class/function has one clear responsibility (Single-Responsibility Principle).
+• Related functionality is grouped into modules (e.g. data, model, training, cli).
+• Internal helpers are made private (_prefix).
+• No global execution at import-time; provide a `main()` entry point.
+• Add type hints and docstrings.
+Return the full, refactored code as a valid Python package structure.
+```
+
+Spend some time on this step; clean structure pays off later.
+
+---
 
 ---
 
