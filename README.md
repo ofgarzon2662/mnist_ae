@@ -151,6 +151,16 @@ python -m build --wheel        # produces dist/mnist_ae-0.0.1-py3-none-any.whl
 The file inside `dist/` is a **portable package** that can be installed with `pip install <file>.whl` on any machine that has Python ≥ the minimum you set.
 
 ### 4½  Test the wheel locally
+
+### 4¾  Run unit tests from source
+If you’re working from the cloned repo rather than the installed wheel, install the package in *editable* mode so Python can find it:
+
+```bash
+pip install -e .[dev]   # or just `pip install -e .` if you skipped dev extras
+pytest --cov=mnist_ae -q  # run tests **and** show coverage %
+```
+
+If `mnist_ae` is not importable you’ll get a `ModuleNotFoundError`; the editable install (or adding the repo root to `PYTHONPATH`) solves that.
 ```bash
 pip install --force-reinstall dist/mnist_ae-*.whl
 python -m mnist_ae.mnist_training --epochs 1 --batch_size 128  # quick sanity run
