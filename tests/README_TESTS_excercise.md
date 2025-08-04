@@ -30,9 +30,6 @@ Hints
   `feature/**`.
 * Gate the job with
   `if: contains(github.event.head_commit.message, 'Deploy')`.
-* Run the merge via the [`peter-evans/create-pull-request`][cpr] Action or a
-  plain `git` command (GitHub Actions runners are allowed to push back to the
-  repo when you supply `GITHUB_TOKEN`).
 * Remember to set `permissions: contents: write` for the job that pushes.
 
 Skeleton workflow
