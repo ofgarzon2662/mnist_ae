@@ -1,0 +1,38 @@
+name: Test & Coverage
+
+on:
+  push:
+    branches: [ "develop" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: contains(github.event.head_commit.message, 'DEPLOY')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+          pip install -e .
+
+      - name: Run tests with coverage (fail under 75%)
+        run: |
+          pytest --cov=mnist_ae --cov-report=term --cov-report=xml --fail-under=75
+
+      - name: Success message
+        if: success()
+        run: echo "Coverage ≥ 75 %. You can open a PR from develop to master."
