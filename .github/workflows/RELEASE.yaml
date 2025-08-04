@@ -34,15 +34,14 @@ jobs:
         run: |
           pytest --cov=mnist_ae --cov-report=term --cov-report=xml --cov-fail-under=75
 
-      - name: Create release branch from commit message
-        if: success()
+      - name: Sanitize commit message for branch name
+        id: sanitize_message
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          NAME=$(echo "${{ github.event.head_commit.message }}" | tr -cs 'A-Za-z0-9._-' '-' | cut -c1-80)
-          git checkout -b "$NAME"
-          git push origin "$NAME"
+          # Sanitize the commit message to create a valid branch name
+          BRANCH_NAME=$(echo "${{ github.event.head_commit.message }}" | sed -e 's/[^a-zA-Z0-9._-]/-/g' | cut -c1-50)
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-      - name: Success message
-        if: success()
-        run: echo "Coverage ≥ 75 %. Branch '$NAME' created from passing commit."
+      - name: Create a new release branch from develop
+        run: |
+          git checkout -b $BRANCH_NAME develop
+          git push origin $BRANCH_NAME
