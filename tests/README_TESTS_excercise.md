@@ -79,14 +79,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           grep -v "^pywin32" requirements.txt > req.txt
-          pip install -r req.txt
-          pip install -e . pytest pytest-cov
+          pip install [ ... ]
+          pip install [ ... ]
 
       # ------------------------------------------------------------------
       # 3. Run test-suite + coverage gate
       # ------------------------------------------------------------------
       - name: Run unit tests
-        run: pytest --cov=mnist_ae --cov-fail-under=75 -q
+        run: [ ... ]
 
       # ------------------------------------------------------------------
       # 4. Merge feature → develop (only if all previous steps succeeded)
@@ -96,16 +96,13 @@ jobs:
         run: |
           git fetch origin develop
           git checkout develop
-          git merge --no-ff ${{ github.ref }} -m "Auto-merge ${{ github.ref }} (CI passed)"
-          git push origin develop
+          [ ... ]
+          [ ... ]
 
       - name: Done
         if: success()
         run: echo "✅ CI passed & coverage ≥ 75 %. Branch merged into develop."
 ```
 
-> **Challenge** – modify the job so that, instead of an immediate merge,
-> it opens a Pull Request with "auto-merge when checks succeed" enabled.
-
-[cpr]: https://github.com/peter-evans/create-pull-request
+> **Challenge** – Fill the Gaps for this new GH Action to implement CI from feature/* to develop branch
 
