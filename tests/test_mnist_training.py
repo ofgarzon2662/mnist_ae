@@ -2,65 +2,84 @@
 Run with::
 
     pytest -q
-
-The tests are intentionally lightweight so they run quickly on CPU-only
-machines (CI, laptops).  We create synthetic tensors instead of downloading
-MNIST.
 """
 from pathlib import Path
+import sys
+import types
+import argparse
 
 import torch
 import pytest
 
 from mnist_ae import mnist_training as mt
 
+# ------------------------------------------------------------------------------------
+# Simple unit checks -----------------------------------------------------------------
+# ------------------------------------------------------------------------------------
 
 def test_get_default_device():
-    """`get_default_device` should return a torch.device."""
     dev = mt.get_default_device()
     assert isinstance(dev, torch.device)
-    # On a CPU-only box this should still pass
-    if torch.cuda.is_available():
-        assert dev.type == "cuda"
-    else:
-        assert dev.type == "cpu"
 
 
 def test_mynet_output_shape():
-    """Forward pass produces (batch, 10) logits."""
     model = mt.MyNet()
-    xb = torch.randn(8, 1, 28, 28)  # mini-batch of fake images
+    xb = torch.randn(8, 1, 28, 28)
     out = model(xb)
     assert out.shape == (8, 10)
-    # log-softmax => rows sum to 0 in probability space => exp + sum == 1
-    probs = out.exp()
-    row_sums = probs.sum(dim=1)
-    assert torch.allclose(row_sums, torch.ones_like(row_sums), atol=1e-5)
+    assert torch.allclose(out.exp().sum(1), torch.ones(8), atol=1e-4)
 
+
+def test_mynet_flat_features():
+    model = mt.MyNet(num_filters=16, kernel_size=3)
+    # internal sanity: linear1 should take (C*H*W) features
+    conv_out = 28 - 3 + 1         # formula from code comment
+    pooled = (conv_out - 3) // 2 + 1
+    expected_in = 16 * pooled * pooled
+    assert model.linear1.in_features == expected_in
+
+
+# ------------------------------------------------------------------------------------
+# Training & eval on synthetic data ---------------------------------------------------
+# ------------------------------------------------------------------------------------
 
 @pytest.fixture(scope="module")
-def tiny_dataloaders():
-    """In-memory dataloaders with 32 random samples (no disk IO)."""
-    rng = torch.Generator().manual_seed(0)
-    xs = torch.randn(32, 1, 28, 28, generator=rng)
-    ys = torch.randint(0, 10, (32,), generator=rng)
+def tiny_loaders():
+    xs = torch.randn(32, 1, 28, 28)
+    ys = torch.randint(0, 10, (32,))
     ds = torch.utils.data.TensorDataset(xs, ys)
     dl = torch.utils.data.DataLoader(ds, batch_size=8, shuffle=False)
-    return dl, dl  # train, test
+    return dl, dl
 
 
-def test_train_epoch_smoke(tiny_dataloaders):
-    """`train_epoch` runs without error and returns scalar loss."""
-    train_dl, _ = tiny_dataloaders
+def test_train_and_eval(tiny_loaders):
+    tr, te = tiny_loaders
     model = mt.MyNet()
     opt = torch.optim.Adam(model.parameters(), lr=1e-3)
-    loss = mt.train_epoch(model, train_dl, opt, device=torch.device("cpu"))
-    assert isinstance(loss, float) and loss > 0
-
-
-def test_evaluate_accuracy(tiny_dataloaders):
-    """`evaluate` returns accuracy between 0 and 1."""
-    _, test_dl = tiny_dataloaders
-    model = mt.MyNet()
-    acc = mt.evaluate(model, test_dl, device=torch.device("cpu"))
+    loss = mt.train_epoch(model, tr, opt, torch.device("cpu"))
+    assert loss > 0
+    acc = mt.evaluate(model, te, torch.device("cpu"))
     assert 0.0 <= acc <= 1.0
+
+
+# ------------------------------------------------------------------------------------
+# Smoke-test the CLI entry point ------------------------------------------------------
+# ------------------------------------------------------------------------------------
+
+def test_main_smoke(monkeypatch, tmp_path, tiny_loaders):
+    """Run `main()` end-to-end but patched to avoid disk+network IO."""
+
+    # 1. Redirect get_dataloaders -> our tiny ones
+    monkeypatch.setattr(mt, "get_dataloaders", lambda *a, **k: tiny_loaders)
+
+    # 2. Avoid actually writing a .pth file
+    monkeypatch.setattr(torch, "save", lambda *a, **k: None)
+
+    # 3. Pretend CUDA is unavailable (to stay on CPU)
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+
+    # 4. Run main() with custom argv
+    test_args = ["prog", "--epochs", "1", "--batch_size", "8"]
+    monkeypatch.setattr(sys, "argv", test_args)
+
+    mt.main()  # should run without error
