@@ -32,7 +32,7 @@ jobs:
 
       - name: Run tests with coverage (fail under 75%)
         run: |
-          pytest --cov=mnist_ae --cov-report=term --cov-report=xml --fail-under=75
+          pytest --cov=mnist_ae --cov-report=term --cov-report=xml --cov-fail-under=75
 
       - name: Success message
         if: success()
