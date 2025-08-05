@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  
 
 jobs:
   test:
@@ -34,6 +36,19 @@ jobs:
         run: |
           pytest --cov=mnist_ae --cov-report=term --cov-report=xml --cov-fail-under=75
 
+      - name: Sanitize commit message for branch name
+        id: sanitize_message
+        run: |
+          # Sanitize the commit message to create a valid branch name
+          BRANCH_NAME=$(echo "${{ github.event.head_commit.message }}" | sed -e 's/[^a-zA-Z0-9._-]/-/g' | cut -c1-50)
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Create a new release branch from develop
+        run: |
+          git checkout -b $BRANCH_NAME develop
+          git push origin $BRANCH_NAME
+
       - name: Success message
         if: success()
         run: echo "Coverage ≥ 75 %. You can open a PR from develop to master."
+

@@ -1,0 +1,40 @@
+name: Build & Publish to PyPI
+
+on:
+  push:
+    branches: [ "master" ]
+    # only run if commit comes from a merged pull-request (GitHub sets this var)
+    # pr merge → push with "Merge pull request" message; that's enough.
+
+permissions:
+  contents: read
+  id-token: write   # for PyPI trusted-publisher (OIDC) or comment out if using token
+
+jobs:
+  build-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build wheel & sdist
+        run: python -m build
+
+      - name: Publish to PyPI (trusted publisher)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+        # If you prefer classic API token:
+        # env:
+        #   TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
