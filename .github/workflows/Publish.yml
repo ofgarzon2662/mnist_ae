@@ -31,10 +31,10 @@ jobs:
       - name: Build wheel & sdist
         run: python -m build
 
-      - name: Publish to PyPI (trusted publisher)
+      - name: Publish to PyPI (classic token)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
-        # If you prefer classic API token:
-        # env:
-        #   TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        env:
+          TWINE_USERNAME: "__token__"
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
