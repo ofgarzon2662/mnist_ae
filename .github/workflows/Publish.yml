@@ -31,7 +31,7 @@ jobs:
       - name: Build wheel & sdist
         run: python -m build
 
-      - name: Publish to PyPI (classic token)
+      - name: Publish to PyPI (trusted publisher)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
