@@ -62,6 +62,44 @@ def test_train_and_eval(tiny_loaders):
     assert 0.0 <= acc <= 1.0
 
 
+def test_train_epoch_respects_max_batches(tiny_loaders):
+    tr, _ = tiny_loaders
+    model = mt.MyNet()
+    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+
+    step_counter = {"count": 0}
+    orig_step = opt.step
+
+    def counted_step(*args, **kwargs):
+        step_counter["count"] += 1
+        return orig_step(*args, **kwargs)
+
+    opt.step = counted_step
+    loss = mt.train_epoch(model, tr, opt, torch.device("cpu"), max_batches=2)
+
+    assert loss > 0
+    assert step_counter["count"] == 2
+
+
+def test_evaluate_respects_max_batches():
+    class AlwaysZeroModel(torch.nn.Module):
+        def forward(self, x):
+            return torch.zeros((x.size(0), 10), device=x.device)
+
+    xs = torch.randn(32, 1, 28, 28)
+    ys = torch.tensor([0] * 8 + [1] * 24)
+    dl = torch.utils.data.DataLoader(
+        torch.utils.data.TensorDataset(xs, ys), batch_size=8, shuffle=False
+    )
+    model = AlwaysZeroModel()
+
+    full_acc = mt.evaluate(model, dl, torch.device("cpu"))
+    quick_acc = mt.evaluate(model, dl, torch.device("cpu"), max_batches=1)
+
+    assert pytest.approx(full_acc, rel=1e-6) == 0.25
+    assert pytest.approx(quick_acc, rel=1e-6) == 1.0
+
+
 # ------------------------------------------------------------------------------------
 # Smoke-test the CLI entry point ------------------------------------------------------
 # ------------------------------------------------------------------------------------
@@ -79,7 +117,17 @@ def test_main_smoke(monkeypatch, tmp_path, tiny_loaders):
     monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
 
     # 4. Run main() with custom argv
-    test_args = ["prog", "--epochs", "1", "--batch_size", "8"]
+    test_args = [
+        "prog",
+        "--epochs",
+        "1",
+        "--batch_size",
+        "8",
+        "--max_train_batches",
+        "1",
+        "--max_test_batches",
+        "1",
+    ]
     monkeypatch.setattr(sys, "argv", test_args)
 
     mt.main()  # should run without error
