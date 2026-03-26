@@ -1,9 +1,9 @@
 # mnist_ae – From Notebook to Python Package
 
 This guide walks you **step-by-step** through turning the `CIML25_MNIST_Intro_v6.ipynb` notebook into a distributable Python package that you can install anywhere (even on TSCC).  It assumes you already know how to run a Jupyter notebook, and that you have **Python ≥ 3.8** available (Python 3.11 recommended).
-
-## 0  Clone the repository
-
+## Introductory Video
+https://github.com/user-attachments/assets/791bf691-32d1-458a-a816-d76942a65b64
+## 0.1  Clone the repository
 ```bash
 git clone https://github.com/<your-username>/mnist_ae.git
 cd mnist_ae
