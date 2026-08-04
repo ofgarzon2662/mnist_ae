@@ -327,7 +327,7 @@ True
 For reproducibility, install the exact version used during the Summer Institute:
 
 ```bash
-python3 -m pip install --user --no-deps mnist-ae==0.0.10
+python3 -m pip install --user --no-deps mnist-ae==2.0.0
 ```
 
 The `--no-deps` option is intentional. The container already provides GPU-enabled PyTorch and torchvision; allowing `pip` to reinstall them could replace the compatible CUDA environment.
@@ -342,7 +342,7 @@ print('mnist-ae:', version('mnist-ae'))"
 Expected result:
 
 ```text
-mnist-ae: 0.0.10
+mnist-ae: 2.0.0
 ```
 
 ### 6.8  Run a short validation test
