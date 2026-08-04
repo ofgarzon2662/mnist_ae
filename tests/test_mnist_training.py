@@ -22,6 +22,29 @@ def test_get_default_device():
     assert isinstance(dev, torch.device)
 
 
+def test_set_random_seed_repeats_random_sequence(monkeypatch):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    mt.set_random_seed(2026)
+    first = torch.rand(5)
+    mt.set_random_seed(2026)
+    second = torch.rand(5)
+    assert torch.equal(first, second)
+
+
+def test_set_random_seed_rejects_negative_values():
+    with pytest.raises(ValueError, match="non-negative"):
+        mt.set_random_seed(-1)
+
+
+def test_notebook_equivalent_settings_match_original_notebook():
+    args = argparse.Namespace()
+
+    returned = mt.apply_notebook_equivalent_settings(args)
+
+    assert returned is args
+    assert vars(args) == mt.NOTEBOOK_EQUIVALENT_SETTINGS
+
+
 def test_mynet_output_shape():
     model = mt.MyNet()
     xb = torch.randn(8, 1, 28, 28)

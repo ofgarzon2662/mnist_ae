@@ -357,17 +357,13 @@ python3 -m mnist_ae.mnist_training \
     --max_test_batches 1
 ```
 
-### 6.9  Run the workshop training example
+### 6.9  Reproduce the notebook training configuration
 
 ```bash
-python3 -m mnist_ae.mnist_training \
-    --epochs 10 \
-    --batch_size 256 \
-    --max_train_batches 100 \
-    --max_test_batches 10
+python3 -m mnist_ae.mnist_training --notebook-equivalent
 ```
 
-Increasing the number of batches is more important than increasing the number of epochs alone. With a batch size of 256, four training batches contain only 1,024 images.
+This preset provides an apples-to-apples comparison with the original notebook: 10 epochs, a batch size of 256, four training batches (1,024 images), one test batch, learning rate `0.01`, 16 convolution filters, a 3x3 kernel, random seed `777`, and the same unshuffled data order.
 
 ### 6.10  Run the complete MNIST workflow
 
