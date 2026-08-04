@@ -1,6 +1,6 @@
 # mnist_ae – From Notebook to Python Package
 
-This guide walks you **step-by-step** through turning the `CIML25_MNIST_Intro_v6.ipynb` notebook into a distributable Python package that you can install anywhere (even on TSCC).  It assumes you already know how to run a Jupyter notebook, and that you have **Python ≥ 3.8** available (Python 3.11 recommended).
+This guide walks you **step-by-step** through turning the `CIML25_MNIST_Intro_v6.ipynb` notebook into a distributable Python package that you can install anywhere, including SDSC Expanse. It assumes you already know how to run a Jupyter notebook and have **Python ≥ 3.9** available (Python 3.11 recommended).
 ## Introductory Video
 https://github.com/user-attachments/assets/791bf691-32d1-458a-a816-d76942a65b64
 ## 0.1  Clone the repository
@@ -145,7 +145,7 @@ Spend some time on this step; clean structure pays off later.
 ## 4  Build the wheel (binary package)
 
 ```bash
-python -m build --wheel        # produces dist/mnist_ae-0.0.1-py3-none-any.whl
+python -m build --wheel        # produces an installable wheel under dist/
 ```
 
 The file inside `dist/` is a **portable package** that can be installed with `pip install <file>.whl` on any machine that has Python ≥ the minimum you set.
@@ -194,25 +194,227 @@ pip install mnist_ae      # replace with the final project name
 
 ---
 
-## 6  Install & run on TSCC (or any HPC)
+## 6  Install and run on Expanse
+
+These instructions use the Summer Institute 2026 GPU reservation, the provided PyTorch/CUDA Singularity container, and the published [`mnist-ae` package](https://pypi.org/project/mnist-ae/).
+
+### 6.1  Log in to Expanse
+
+Run this command from your local computer, replacing `<username>` with your Expanse username:
 
 ```bash
-# inside a job script or interactive srun session
-module load python3 cuda            # adjust to cluster versions
-python -m venv ~/mnist_env && source ~/mnist_env/bin/activate
-
-
-# now install your package from PyPI
-pip install mnist_ae
-
-# (alternative) install a local wheel -- You'd have to scp your local *.whl to TSCC.
-# pip install ~/dist/mnist_ae-0.0.1-py3-none-any.whl
-
-# launch training
-python -m mnist_ae.mnist_training --epochs 5 --batch_size 256
+ssh <username>@login.expanse.sdsc.edu
 ```
 
-Check the time it takes for these 5 epocs and compare to your local run. Spot any significant difference?
+Do not run the training program directly on the login node. Computational work must run through Slurm on a compute node.
+
+### 6.2  Get the Summer Institute helper script
+
+Clone the Summer Institute repository on the Expanse login node:
+
+```bash
+cd ~
+git clone https://github.com/sdsc/sdsc-summer-institute-2026.git
+cd ~/sdsc-summer-institute-2026
+```
+
+If you already downloaded the repository, update it instead:
+
+```bash
+cd ~/sdsc-summer-institute-2026
+git pull
+```
+
+### 6.3  Request an interactive GPU node
+
+Choose either method below. Using the Summer Institute script is recommended because it contains the appropriate Slurm account, reservation, QoS, GPU, CPU, memory, and time settings.
+
+#### Option A: Use the Summer Institute script
+
+```bash
+cd ~/sdsc-summer-institute-2026
+bash srun-gpu.sh
+```
+
+The script is located in the repository root and is fully commented so you can inspect the Slurm options before running it.
+
+#### Option B: Run a short Slurm request manually
+
+Alternatively, request a 30-minute interactive GPU session directly:
+
+```bash
+srun --account=sdp173 \
+     --reservation=si26gpu \
+     --partition=gpu-shared \
+     --qos=gpu-shared-eot \
+     --nodes=1 \
+     --ntasks=1 \
+     --cpus-per-task=8 \
+     --mem=96G \
+     --gpus=1 \
+     --time=00:30:00 \
+     --pty bash -l
+```
+
+After using either method, wait until the prompt changes from a login-node hostname to a compute-node hostname similar to:
+
+```text
+username@exp-1-60
+```
+
+Confirm that you are inside a Slurm GPU job:
+
+```bash
+hostname
+echo "$SLURM_JOB_ID"
+nvidia-smi
+```
+
+A nonempty Slurm job ID and successful `nvidia-smi` output indicate that you are running inside a GPU job.
+
+> The `si26gpu` reservation and `gpu-shared-eot` QoS are available only during the scheduled Summer Institute reservation. If the script's requested time extends beyond the reservation's remaining time, use Option B to request a shorter session.
+
+### 6.4  Create a persistent working directory
+
+Run these commands on the allocated compute node:
+
+```bash
+mkdir -p ~/mnist_ae_expanse
+cd ~/mnist_ae_expanse
+```
+
+The MNIST dataset and trained model will be saved in this directory.
+
+### 6.5  Enter the PyTorch/CUDA container
+
+Expanse's default system Python is too old for this package. Do not load Python or CUDA manually. Instead, use the provided Singularity container:
+
+```bash
+module load singularitypro
+
+singularity shell --nv \
+    --bind /expanse,/scratch,/cm \
+    /cm/shared/examples/sdsc/si/2026/ptl-cuda-12-1.sif
+```
+
+The prompt should change to:
+
+```text
+Singularity>
+```
+
+Run all remaining Python commands inside this container.
+
+### 6.6  Verify Python, PyTorch, and GPU access
+
+```bash
+python3 --version
+
+python3 -c "import torch; \
+print('PyTorch:', torch.__version__); \
+print('CUDA available:', torch.cuda.is_available()); \
+print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None')"
+```
+
+`CUDA available` must print:
+
+```text
+True
+```
+
+### 6.7  Install the package from PyPI
+
+For reproducibility, install the exact version used during the Summer Institute:
+
+```bash
+python3 -m pip install --user --no-deps mnist-ae==0.0.10
+```
+
+The `--no-deps` option is intentional. The container already provides GPU-enabled PyTorch and torchvision; allowing `pip` to reinstall them could replace the compatible CUDA environment.
+
+Verify the installed version:
+
+```bash
+python3 -c "from importlib.metadata import version; \
+print('mnist-ae:', version('mnist-ae'))"
+```
+
+Expected result:
+
+```text
+mnist-ae: 0.0.10
+```
+
+### 6.8  Run a short validation test
+
+This run uses one epoch, four training batches, and one test batch. It verifies package installation, GPU access, data downloading, training, evaluation, and model saving:
+
+```bash
+python3 -m mnist_ae.mnist_training \
+    --epochs 1 \
+    --batch_size 256 \
+    --max_train_batches 4 \
+    --max_test_batches 1
+```
+
+### 6.9  Run the workshop training example
+
+```bash
+python3 -m mnist_ae.mnist_training \
+    --epochs 10 \
+    --batch_size 256 \
+    --max_train_batches 100 \
+    --max_test_batches 10
+```
+
+Increasing the number of batches is more important than increasing the number of epochs alone. With a batch size of 256, four training batches contain only 1,024 images.
+
+### 6.10  Run the complete MNIST workflow
+
+To use the entire training and test datasets, omit both batch-limit arguments:
+
+```bash
+python3 -m mnist_ae.mnist_training \
+    --epochs 10 \
+    --batch_size 256
+```
+
+The run produces:
+
+```text
+data/MNIST/
+mnist_cnn.pth
+```
+
+Confirm the saved model:
+
+```bash
+ls -lh mnist_cnn.pth
+```
+
+During the initial dataset download, some URLs may return `HTTP Error 404`. This is harmless if the program subsequently downloads the same file from a PyTorch backup server.
+
+### 6.11  Exit and release the GPU
+
+First leave the Singularity container:
+
+```bash
+exit
+```
+
+Then leave the compute node and release the Slurm allocation:
+
+```bash
+exit
+```
+
+Confirm that you are back on the Expanse login node:
+
+```bash
+hostname
+```
+
+For additional details, see the [official SDSC Expanse User Guide](https://www.sdsc.edu/systems/expanse/user_guide.html).
 
 ---
 
