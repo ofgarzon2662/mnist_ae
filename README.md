@@ -115,7 +115,7 @@ nbdev_prepare      # sync settings → pyproject.toml, tag version, install git 
 
 **Recommendations:**
 1. **Do *not* mark long training loops or plotting cells with `#| export`.**  Keep exploratory code in the notebook; only export reusable library functions and models. Heavy loops inside the package will run every time someone imports it and can waste GPU/CPU hours.
-2. The exported file can be a single, monolithic script – notebooks aren’t always written with clean architecture in mind.  After export, audit the code (or ask an advanced LLM, o3 from ChatGPT is recommended, as well as Gemini2.5 or any other reasoning model) and refactor it into small, SOLID-compliant modules.
+2. The exported file can be a single, monolithic script – notebooks aren’t always written with clean architecture in mind.  After export, audit the code (or ask an advanced LLM such as Codex Terra, or Sonnet5) and refactor it into small, SOLID-compliant modules.
 
 Use this starter prompt to guide the refactor:
 ```text
