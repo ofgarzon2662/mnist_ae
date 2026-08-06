@@ -15,6 +15,19 @@ import torch.nn.functional as F
 from torchvision import datasets, transforms
 
 
+NOTEBOOK_EQUIVALENT_SETTINGS = {
+    "epochs": 10,
+    "lr": 0.01,
+    "batch_size": 256,
+    "max_train_batches": 4,
+    "max_test_batches": 1,
+    "num_filters": 16,
+    "kernel_size": 3,
+    "seed": 777,
+    "shuffle": False,
+}
+
+
 #─────────────────────────────── Model ────────────────────────────────#
 #| export
 class MyNet(nn.Module):
@@ -51,10 +64,31 @@ def get_default_device(verbose: bool = False) -> torch.device:
 
 
 #| export
+def set_random_seed(seed: int = 777) -> None:
+    "Seed the PyTorch random-number generators used by this program."
+    if seed < 0:
+        raise ValueError("seed must be non-negative")
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+#| export
+def apply_notebook_equivalent_settings(
+    args: argparse.Namespace,
+) -> argparse.Namespace:
+    "Apply the settings used by the original demonstration notebook."
+    for name, value in NOTEBOOK_EQUIVALENT_SETTINGS.items():
+        setattr(args, name, value)
+    return args
+
+
+#| export
 def get_dataloaders(
     batch_size: int = 64,
     num_workers: int = 4,
     data_dir: str | Path = "data",
+    shuffle: bool = True,
 ) -> Tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
     "Return (train_loader, test_loader) for MNIST."
     tfm = transforms.Compose(
@@ -65,7 +99,7 @@ def get_dataloaders(
 
     pin = torch.cuda.is_available()
     tr_dl = torch.utils.data.DataLoader(
-        tr_ds, batch_size=batch_size, shuffle=True,
+        tr_ds, batch_size=batch_size, shuffle=shuffle,
         num_workers=num_workers, pin_memory=pin, drop_last=True
     )
     te_dl = torch.utils.data.DataLoader(
@@ -130,13 +164,28 @@ def main() -> None:
     p.add_argument("--batch_size",  type=int,   default=64)
     p.add_argument("--max_train_batches", type=int, default=None)
     p.add_argument("--max_test_batches",  type=int, default=None)
+    p.add_argument("--num_filters", type=int, default=32)
+    p.add_argument("--kernel_size", type=int, default=5)
+    p.add_argument("--seed", type=int, default=777)
+    p.add_argument("--notebook-equivalent", action="store_true")
+    p.set_defaults(shuffle=True)
     args = p.parse_args()
 
+    if args.notebook_equivalent:
+        apply_notebook_equivalent_settings(args)
+
+    set_random_seed(args.seed)
     device = get_default_device(verbose=True)
 
-    model = MyNet().to(device)
+    model = MyNet(
+        num_filters=args.num_filters,
+        kernel_size=args.kernel_size,
+    ).to(device)
     opt   = torch.optim.Adam(model.parameters(), lr=args.lr)
-    tr_dl, te_dl = get_dataloaders(batch_size=args.batch_size)
+    tr_dl, te_dl = get_dataloaders(
+        batch_size=args.batch_size,
+        shuffle=args.shuffle,
+    )
 
     for ep in range(1, args.epochs + 1):
         t0 = time.time()
@@ -153,8 +202,11 @@ def main() -> None:
 
 #────────────────────────── Re-exports ───────────────────────────#
 __all__ = [
+    "NOTEBOOK_EQUIVALENT_SETTINGS",
     "MyNet",
     "get_default_device",
+    "set_random_seed",
+    "apply_notebook_equivalent_settings",
     "get_dataloaders",
     "train_epoch",
     "evaluate",

@@ -24,13 +24,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install full requirements except pywin32
+      - name: Install package and test dependencies
         run: |
-          grep -v "^pywin32" requirements.txt > req.txt
           python -m pip install --upgrade pip
-          pip install -r req.txt
-          pip install -e .
-          pip install pytest pytest-cov
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --no-deps -e .
+          python -m pip install pytest pytest-cov
 
       - name: Run tests with coverage (fail under 75%)
         run: |
